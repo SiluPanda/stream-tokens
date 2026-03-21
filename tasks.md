@@ -44,11 +44,11 @@
 
 ## Phase 4: Paragraph Boundary Detector
 
-- [ ] **Implement paragraph boundary detector in `src/units/paragraph.ts`** — Implement paragraph boundary detection: scan for `\n\n` (or `\r\n\r\n`) in the buffer; when found, everything before it is a complete paragraph; the double newline is not included in the emitted paragraph; trim trailing whitespace by default (configurable via `trimWhitespace`). Handle edge cases: three or more consecutive newlines treated as single boundary (no empty paragraph emitted); newlines split across tokens; Windows line endings `\r\n\r\n` treated identically to `\n\n`; single trailing newline at stream end emits as complete paragraph. Support options: `trimWhitespace` (default `true`). | Status: not_done
+- [x] **Implement paragraph boundary detector in `src/units/paragraph.ts`** — Implement paragraph boundary detection: scan for `\n\n` (or `\r\n\r\n`) in the buffer; when found, everything before it is a complete paragraph; the double newline is not included in the emitted paragraph; trim trailing whitespace by default (configurable via `trimWhitespace`). Handle edge cases: three or more consecutive newlines treated as single boundary (no empty paragraph emitted); newlines split across tokens; Windows line endings `\r\n\r\n` treated identically to `\n\n`; single trailing newline at stream end emits as complete paragraph. Support options: `trimWhitespace` (default `true`). | Status: done
 
-- [ ] **Implement `paragraphs()` shorthand function** — Create a convenience function `paragraphs(stream, options?)` that calls `aggregate(stream, 'paragraph', options)` and returns `AsyncIterable<AggregatedChunk>`. | Status: not_done
+- [x] **Implement `paragraphs()` shorthand function** — Create a convenience function `paragraphs(stream, options?)` that calls `aggregate(stream, 'paragraph', options)` and returns `AsyncIterable<AggregatedChunk>`. | Status: done
 
-- [ ] **Write paragraph boundary tests in `src/__tests__/paragraph.test.ts`** — Test cases: basic paragraph splitting on double newlines; Windows `\r\n\r\n`; three or more consecutive newlines; newlines split across tokens; `trimWhitespace` option; single paragraph (no double newline); flush at stream end; empty stream. | Status: not_done
+- [x] **Write paragraph boundary tests in `src/__tests__/paragraph.test.ts`** — Test cases: basic paragraph splitting on double newlines; Windows `\r\n\r\n`; three or more consecutive newlines; newlines split across tokens; `trimWhitespace` option; single paragraph (no double newline); flush at stream end; empty stream. | Status: done
 
 ---
 
