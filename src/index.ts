@@ -2,6 +2,7 @@ export type { AggregationUnit, AggregatedChunk, ChunkMetadata, BoundaryResult, A
 export { aggregate } from './aggregate';
 export { detectWordBoundary } from './units/word';
 export { detectLineBoundary } from './units/line';
+export { detectParagraphBoundary } from './units/paragraph';
 export { fromOpenAI } from './adapters/openai';
 export { fromAnthropic } from './adapters/anthropic';
 

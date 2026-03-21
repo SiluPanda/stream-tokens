@@ -1,6 +1,7 @@
 import type { AggregationUnit, AggregatorOptions, AggregatedChunk, BoundaryResult } from './types';
 import { detectWordBoundary } from './units/word';
 import { detectLineBoundary } from './units/line';
+import { detectParagraphBoundary } from './units/paragraph';
 
 const DEFAULT_MAX_BUFFER = 10_000_000;
 
@@ -18,18 +19,6 @@ async function* readableStreamToAsyncIterable(stream: ReadableStream<string>): A
   } finally {
     reader.releaseLock();
   }
-}
-
-/**
- * Detect paragraph boundary: split on double newline.
- */
-function detectParagraph(buffer: string, _opts: AggregatorOptions): BoundaryResult | null {
-  const idx = buffer.indexOf('\n\n');
-  if (idx === -1) return null;
-  // skip extra newlines
-  let nextStart = idx + 2;
-  while (nextStart < buffer.length && buffer[nextStart] === '\n') nextStart++;
-  return { boundaryEnd: idx, nextStart };
 }
 
 // Built-in abbreviation list for sentence detection
@@ -263,7 +252,7 @@ function selectDetector(unit: AggregationUnit, options: AggregatorOptions): (buf
   switch (unit) {
     case 'word': return (buf) => detectWordBoundary(buf, options);
     case 'line': return (buf) => detectLineBoundary(buf, options);
-    case 'paragraph': return (buf) => detectParagraph(buf, options);
+    case 'paragraph': return (buf) => detectParagraphBoundary(buf, options);
     case 'sentence': return (buf) => detectSentence(buf, options);
     case 'json': return (buf) => detectJSON(buf, options);
     case 'code-block': return (buf) => detectCodeBlock(buf, options);
