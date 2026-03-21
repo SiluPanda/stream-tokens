@@ -2,6 +2,9 @@ import type { AggregationUnit, AggregatorOptions, AggregatedChunk, BoundaryResul
 import { detectWordBoundary } from './units/word';
 import { detectLineBoundary } from './units/line';
 import { detectParagraphBoundary } from './units/paragraph';
+import { detectJsonBoundary } from './units/json';
+import { detectCodeBlockBoundary } from './units/code-block';
+import { detectMarkdownSectionBoundary } from './units/markdown-section';
 
 const DEFAULT_MAX_BUFFER = 10_000_000;
 
@@ -116,137 +119,6 @@ function detectSentence(buffer: string, options: AggregatorOptions): BoundaryRes
   return null;
 }
 
-/**
- * Detect JSON object/array boundary using depth tracking.
- */
-function detectJSON(buffer: string, _opts: AggregatorOptions): BoundaryResult | null {
-  // Find first { or [
-  let start = -1;
-  let startChar = '';
-  for (let i = 0; i < buffer.length; i++) {
-    if (buffer[i] === '{' || buffer[i] === '[') {
-      start = i;
-      startChar = buffer[i];
-      break;
-    }
-  }
-  if (start === -1) return null;
-
-  let depth = 0;
-  let inString = false;
-  let escape = false;
-
-  for (let i = start; i < buffer.length; i++) {
-    const ch = buffer[i];
-    if (escape) { escape = false; continue; }
-    if (ch === '\\' && inString) { escape = true; continue; }
-    if (ch === '"') { inString = !inString; continue; }
-    if (inString) continue;
-
-    if (ch === '{' || ch === '[') {
-      depth++;
-    } else if (ch === '}' || ch === ']') {
-      depth--;
-      if (depth === 0) {
-        const type = startChar === '{' ? 'object' : 'array';
-        // skip whitespace after
-        let nextStart = i + 1;
-        while (nextStart < buffer.length && (buffer[nextStart] === ' ' || buffer[nextStart] === '\n' || buffer[nextStart] === '\r' || buffer[nextStart] === '\t')) nextStart++;
-        return { boundaryEnd: i + 1, nextStart, contentStart: start, metadata: { type, depth: 0 } };
-      }
-    }
-  }
-  return null;
-}
-
-/**
- * Detect fenced code block boundary.
- * Looks for opening ``` (or ~~~) fence, accumulates until matching closing fence.
- */
-function detectCodeBlock(buffer: string, _opts: AggregatorOptions): BoundaryResult | null {
-  // Find opening fence at start of a line (or start of buffer)
-  const openMatch = buffer.match(/(?:^|\n)(`{3,}|~{3,})(.*)\n/);
-  if (!openMatch) return null;
-
-  const openMatchIndex = buffer.indexOf(openMatch[0]);
-
-  const fence = openMatch[1]; // the backticks/tildes
-  const language = openMatch[2].trim();
-  const fenceChar = fence[0];
-  const fenceLen = fence.length;
-
-  // Content starts after the opening fence line
-  const afterOpen = openMatchIndex + openMatch[0].length;
-
-  // Look for matching closing fence (same or more fence chars at start of line)
-  const remaining = buffer.slice(afterOpen);
-  const closeMatch = remaining.match(new RegExp(`(?:^|\n)${fenceChar === '`' ? '`' : '~'}{${fenceLen},}[ \\t]*(?:\\n|$)`));
-  if (!closeMatch) return null;
-
-  const closeRelIdx = remaining.indexOf(closeMatch[0]);
-  const closeEnd = afterOpen + closeRelIdx + closeMatch[0].length;
-
-  const end = closeEnd;
-
-  return {
-    boundaryEnd: end,
-    nextStart: end,
-    metadata: { language: language || undefined, fenceLength: fenceLen },
-  };
-}
-
-/**
- * Detect markdown section boundary.
- * Emits content when a new heading is encountered (the previous section closes).
- */
-function detectMarkdownSection(buffer: string, options: AggregatorOptions): BoundaryResult | null {
-  const minLevel = options.minLevel ?? 1;
-  const maxLevel = options.maxLevel ?? 6;
-
-  // Find a heading pattern at start of line (not the first position — first heading is the START of a section)
-  // We need to find the SECOND heading occurrence to close the first section.
-  const headingRegex = new RegExp(`(?:^|\n)(#{${minLevel},${maxLevel}}) (.+)`, 'g');
-  let firstMatch: RegExpExecArray | null = null;
-  let secondMatch: RegExpExecArray | null = null;
-
-  let m: RegExpExecArray | null;
-  while ((m = headingRegex.exec(buffer)) !== null) {
-    if (firstMatch === null) {
-      firstMatch = m;
-    } else {
-      secondMatch = m;
-      break;
-    }
-  }
-
-  if (firstMatch === null) return null; // No heading at all
-
-  // If there's a second heading, emit everything before it
-  if (secondMatch !== null) {
-    // boundaryEnd is the index where the second heading starts (after the \n)
-    const boundaryEnd = secondMatch.index + (secondMatch[0].startsWith('\n') ? 1 : 0);
-    const hashes = firstMatch[1];
-    const headingText = firstMatch[2];
-    return {
-      boundaryEnd,
-      nextStart: boundaryEnd,
-      metadata: { level: hashes.length, heading: headingText },
-    };
-  }
-
-  // Only one heading found: check if there's content BEFORE the first heading
-  const firstHeadingStart = firstMatch.index + (firstMatch[0].startsWith('\n') ? 1 : 0);
-  if (firstHeadingStart > 0) {
-    // There's pre-heading content, emit it
-    return {
-      boundaryEnd: firstHeadingStart,
-      nextStart: firstHeadingStart,
-      metadata: { level: 0 },
-    };
-  }
-
-  return null; // Only one section so far, need more content
-}
 
 function selectDetector(unit: AggregationUnit, options: AggregatorOptions): (buf: string) => BoundaryResult | null {
   switch (unit) {
@@ -254,9 +126,9 @@ function selectDetector(unit: AggregationUnit, options: AggregatorOptions): (buf
     case 'line': return (buf) => detectLineBoundary(buf, options);
     case 'paragraph': return (buf) => detectParagraphBoundary(buf, options);
     case 'sentence': return (buf) => detectSentence(buf, options);
-    case 'json': return (buf) => detectJSON(buf, options);
-    case 'code-block': return (buf) => detectCodeBlock(buf, options);
-    case 'markdown-section': return (buf) => detectMarkdownSection(buf, options);
+    case 'json': return (buf) => detectJsonBoundary(buf, options);
+    case 'code-block': return (buf) => detectCodeBlockBoundary(buf, options);
+    case 'markdown-section': return (buf) => detectMarkdownSectionBoundary(buf, options);
     case 'custom': return options.detect ?? (() => null);
     default: return (buf) => detectLineBoundary(buf, options);
   }
@@ -271,6 +143,7 @@ function isPartial(content: string, unit: AggregationUnit): boolean {
     case 'line': return false; // lines always considered complete on flush
     case 'json': return true; // unclosed JSON is always partial
     case 'code-block': return true; // unclosed code block is partial
+    case 'markdown-section': return true; // last section without a closing heading is partial
     default: return false;
   }
 }

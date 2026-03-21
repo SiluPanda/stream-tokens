@@ -1,6 +1,6 @@
 {
   "name": "stream-tokens",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "description": "Aggregate streaming LLM tokens into semantic units",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
