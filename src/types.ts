@@ -46,6 +46,10 @@ export interface AggregatorOptions {
   includeWhitespace?: boolean; // include trailing whitespace in word content, default false
   preservePunctuation?: boolean; // keep punctuation attached to words, default true
 
+  // line options
+  includeNewline?: boolean;     // include \n in emitted lines, default false
+  skipEmpty?: boolean;          // skip empty lines, default false
+
   // paragraph options
   minParagraphLength?: number; // default 1
 
