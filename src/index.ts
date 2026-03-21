@@ -1,5 +1,7 @@
 export type { AggregationUnit, AggregatedChunk, ChunkMetadata, BoundaryResult, AggregatorOptions } from './types';
 export { aggregate } from './aggregate';
+export { fromOpenAI } from './adapters/openai';
+export { fromAnthropic } from './adapters/anthropic';
 
 // Convenience shorthands
 import { aggregate } from './aggregate';
