@@ -1,4 +1,5 @@
 import type { AggregationUnit, AggregatorOptions, AggregatedChunk, BoundaryResult } from './types';
+import { detectWordBoundary } from './units/word';
 
 const DEFAULT_MAX_BUFFER = 10_000_000;
 
@@ -16,46 +17,6 @@ async function* readableStreamToAsyncIterable(stream: ReadableStream<string>): A
   } finally {
     reader.releaseLock();
   }
-}
-
-/**
- * Detect word boundary: split on whitespace. A word is complete when the buffer
- * contains whitespace after a non-whitespace sequence.
- */
-function detectWord(buffer: string, _opts: AggregatorOptions): BoundaryResult | null {
-  // Find first non-whitespace character
-  const trimStart = buffer.search(/\S/);
-  if (trimStart === -1) return null; // only whitespace, no word yet
-
-  // Find first whitespace after the non-whitespace run
-  let wsIdx = -1;
-  for (let i = trimStart; i < buffer.length; i++) {
-    const c = buffer[i];
-    if (c === ' ' || c === '\n' || c === '\t' || c === '\r') {
-      wsIdx = i;
-      break;
-    }
-  }
-  if (wsIdx === -1) return null; // no whitespace yet, word incomplete
-
-  // The word content is from trimStart to wsIdx (exclusive)
-  // But we need boundaryEnd to be where content ends; however we want to skip
-  // leading whitespace before the actual word. We handle that by adjusting nextStart.
-  // Actually: we should emit buffer[0..wsIdx] but only the non-whitespace part as content.
-  // The aggregate() function does buffer.slice(0, boundary.boundaryEnd) for content.
-  // So boundaryEnd = wsIdx means content = buffer[0..wsIdx].
-  // But if buffer starts with whitespace (trimStart > 0), that whitespace is in the content.
-  // We need to handle that at the aggregate level OR we return a content-trimmed boundary.
-  // The simplest approach: return boundaryEnd=wsIdx, nextStart skips trailing whitespace.
-  // The content will be buffer.slice(0, wsIdx) which may have leading whitespace — but
-  // the aggregate loop should handle empty content by not emitting. We trim in content check.
-
-  // Consume trailing whitespace for nextStart
-  let nextStart = wsIdx + 1;
-  while (nextStart < buffer.length && (buffer[nextStart] === ' ' || buffer[nextStart] === '\n' || buffer[nextStart] === '\t' || buffer[nextStart] === '\r')) {
-    nextStart++;
-  }
-  return { boundaryEnd: wsIdx, nextStart };
 }
 
 /**
@@ -308,7 +269,7 @@ function detectMarkdownSection(buffer: string, options: AggregatorOptions): Boun
 
 function selectDetector(unit: AggregationUnit, options: AggregatorOptions): (buf: string) => BoundaryResult | null {
   switch (unit) {
-    case 'word': return (buf) => detectWord(buf, options);
+    case 'word': return (buf) => detectWordBoundary(buf, options);
     case 'line': return (buf) => detectLine(buf, options);
     case 'paragraph': return (buf) => detectParagraph(buf, options);
     case 'sentence': return (buf) => detectSentence(buf, options);
