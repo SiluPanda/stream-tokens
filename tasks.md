@@ -34,11 +34,11 @@
 
 ## Phase 3: Line Boundary Detector
 
-- [ ] **Implement line boundary detector in `src/units/line.ts`** — Implement line boundary detection: scan for `\n` in the buffer; when found, everything before it is a complete line; the newline itself is not included by default (configurable via `includeNewline`). Handle edge cases: `\r\n` treated as single newline with `\r` stripped; empty lines (two consecutive newlines emit an empty string between them unless `skipEmpty: true`); content at stream end without trailing newline is emitted as the final line (always `partial: false` for lines). Support options: `includeNewline` (default `false`), `skipEmpty` (default `false`). | Status: not_done
+- [x] **Implement line boundary detector in `src/units/line.ts`** — Implement line boundary detection: scan for `\n` in the buffer; when found, everything before it is a complete line; the newline itself is not included by default (configurable via `includeNewline`). Handle edge cases: `\r\n` treated as single newline with `\r` stripped; empty lines (two consecutive newlines emit an empty string between them unless `skipEmpty: true`); content at stream end without trailing newline is emitted as the final line (always `partial: false` for lines). Support options: `includeNewline` (default `false`), `skipEmpty` (default `false`). | Status: done
 
-- [ ] **Implement `lines()` shorthand function** — Create a convenience function `lines(stream, options?)` that calls `aggregate(stream, 'line', options)` and returns `AsyncIterable<AggregatedChunk>`. | Status: not_done
+- [x] **Implement `lines()` shorthand function** — Create a convenience function `lines(stream, options?)` that calls `aggregate(stream, 'line', options)` and returns `AsyncIterable<AggregatedChunk>`. | Status: done
 
-- [ ] **Write line boundary tests in `src/__tests__/line.test.ts`** — Test cases: basic line splitting on `\n`; Windows newlines `\r\n`; empty lines; no trailing newline at stream end; `includeNewline` option; `skipEmpty` option; multiple newlines split across tokens; single-character tokens; content with mixed `\n` and `\r\n`; stream ending with `\n` vs without. | Status: not_done
+- [x] **Write line boundary tests in `src/__tests__/line.test.ts`** — Test cases: basic line splitting on `\n`; Windows newlines `\r\n`; empty lines; no trailing newline at stream end; `includeNewline` option; `skipEmpty` option; multiple newlines split across tokens; single-character tokens; content with mixed `\n` and `\r\n`; stream ending with `\n` vs without. | Status: done
 
 ---
 
