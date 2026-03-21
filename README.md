@@ -66,13 +66,15 @@ for await (const chunk of aggregate(tokenStream, 'word')) {
 Each unit has a shorthand that calls `aggregate()` with the unit preset:
 
 ```typescript
-import { words, sentences, lines, paragraphs, jsonObjects } from 'stream-tokens';
+import { words, sentences, lines, paragraphs, jsonObjects, codeBlocks, markdownSections } from 'stream-tokens';
 
 for await (const chunk of words(tokenStream)) { /* ... */ }
 for await (const chunk of sentences(tokenStream)) { /* ... */ }
 for await (const chunk of lines(tokenStream)) { /* ... */ }
 for await (const chunk of paragraphs(tokenStream)) { /* ... */ }
 for await (const chunk of jsonObjects(tokenStream)) { /* ... */ }
+for await (const chunk of codeBlocks(tokenStream)) { /* ... */ }
+for await (const chunk of markdownSections(tokenStream)) { /* ... */ }
 ```
 
 ### `detectWordBoundary(buffer, options)`
@@ -84,6 +86,28 @@ import { detectWordBoundary } from 'stream-tokens';
 
 const result = detectWordBoundary('hello world', {});
 // { boundaryEnd: 5, nextStart: 6 }
+```
+
+### `detectCodeBlockBoundary(buffer, options)`
+
+The low-level code block boundary detector. Returns a `BoundaryResult` with `metadata.language` and `metadata.fenceLength`, or `null`.
+
+```typescript
+import { detectCodeBlockBoundary } from 'stream-tokens';
+
+const result = detectCodeBlockBoundary('```typescript\nconst x = 1;\n```\n', {});
+// { boundaryEnd: 32, nextStart: 32, metadata: { language: 'typescript', fenceLength: 3 } }
+```
+
+### `detectMarkdownSectionBoundary(buffer, options)`
+
+The low-level markdown section boundary detector. Returns a `BoundaryResult` with `metadata.level` and `metadata.heading`, or `null`.
+
+```typescript
+import { detectMarkdownSectionBoundary } from 'stream-tokens';
+
+const result = detectMarkdownSectionBoundary('# Intro\ntext\n# Methods\ntext', {});
+// { boundaryEnd: 13, nextStart: 13, metadata: { level: 1, heading: 'Intro' } }
 ```
 
 ## Adapters

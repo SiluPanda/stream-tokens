@@ -3,6 +3,9 @@ export { aggregate } from './aggregate';
 export { detectWordBoundary } from './units/word';
 export { detectLineBoundary } from './units/line';
 export { detectParagraphBoundary } from './units/paragraph';
+export { detectJsonBoundary } from './units/json';
+export { detectCodeBlockBoundary } from './units/code-block';
+export { detectMarkdownSectionBoundary } from './units/markdown-section';
 export { fromOpenAI } from './adapters/openai';
 export { fromAnthropic } from './adapters/anthropic';
 
@@ -24,4 +27,10 @@ export function paragraphs(stream: AsyncIterable<string> | ReadableStream<string
 }
 export function jsonObjects(stream: AsyncIterable<string> | ReadableStream<string>, options?: AggregatorOptions): AsyncIterable<AggregatedChunk> {
   return aggregate(stream, 'json', options);
+}
+export function codeBlocks(stream: AsyncIterable<string> | ReadableStream<string>, options?: AggregatorOptions): AsyncIterable<AggregatedChunk> {
+  return aggregate(stream, 'code-block', options);
+}
+export function markdownSections(stream: AsyncIterable<string> | ReadableStream<string>, options?: AggregatorOptions): AsyncIterable<AggregatedChunk> {
+  return aggregate(stream, 'markdown-section', options);
 }
