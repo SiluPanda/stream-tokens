@@ -3,6 +3,7 @@
 Aggregate streaming LLM tokens into semantic units -- words, sentences, paragraphs, JSON objects, code blocks, and more.
 
 [![npm version](https://img.shields.io/npm/v/stream-tokens.svg)](https://www.npmjs.com/package/stream-tokens)
+[![npm downloads](https://img.shields.io/npm/dt/stream-tokens.svg)](https://www.npmjs.com/package/stream-tokens)
 [![license](https://img.shields.io/npm/l/stream-tokens.svg)](https://github.com/SiluPanda/stream-tokens/blob/master/LICENSE)
 [![node](https://img.shields.io/node/v/stream-tokens.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue.svg)](https://www.typescriptlang.org/)
