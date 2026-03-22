@@ -2,6 +2,7 @@ import type { AggregationUnit, AggregatorOptions, AggregatedChunk, BoundaryResul
 import { detectWordBoundary } from './units/word';
 import { detectLineBoundary } from './units/line';
 import { detectParagraphBoundary } from './units/paragraph';
+import { detectSentenceBoundary } from './units/sentence';
 import { detectJsonBoundary } from './units/json';
 import { detectCodeBlockBoundary } from './units/code-block';
 import { detectMarkdownSectionBoundary } from './units/markdown-section';
@@ -24,108 +25,12 @@ async function* readableStreamToAsyncIterable(stream: ReadableStream<string>): A
   }
 }
 
-// Built-in abbreviation list for sentence detection
-const ABBREVIATIONS = new Set([
-  'mr', 'mrs', 'ms', 'dr', 'prof', 'sr', 'jr', 'vs', 'etc',
-  'inc', 'ltd', 'corp', 'dept', 'est', 'fig', 'approx', 'misc',
-  'u.s', 'u.k', 'e.g', 'i.e', 'no', 'vol', 'jan', 'feb', 'mar',
-  'apr', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'st',
-  'ave', 'blvd', 'gen', 'gov', 'lt', 'mt', 'rev', 'sgt', 'spc',
-  'supt', 'al', 'div', 'govt', 'assn', 'bros', 'co', 'ed', 'intl',
-  'natl', 'univ',
-]);
-
-/**
- * Detect sentence boundary using heuristics.
- * A sentence ends at: . ! ? followed by whitespace and an uppercase letter (or end).
- * Handles abbreviations, decimal numbers, ellipsis.
- */
-function detectSentence(buffer: string, options: AggregatorOptions): BoundaryResult | null {
-  const abbrevs = new Set([
-    ...ABBREVIATIONS,
-    ...(options.abbreviations ?? []).map(a => a.toLowerCase().replace(/\.$/, '')),
-  ]);
-
-  for (let i = 0; i < buffer.length; i++) {
-    const ch = buffer[i];
-    if (ch !== '.' && ch !== '!' && ch !== '?') continue;
-
-    // ellipsis: skip the dots that form ...
-    if (ch === '.' && buffer[i + 1] === '.') continue;
-
-    // Check what follows the punctuation (and any closing quotes/parens)
-    let j = i + 1;
-    // skip closing quotes/parens after punctuation
-    while (j < buffer.length && (buffer[j] === '"' || buffer[j] === "'" || buffer[j] === ')' || buffer[j] === ']' || buffer[j] === '\u201d')) j++;
-
-    // Must have whitespace after (or end of buffer)
-    if (j >= buffer.length) {
-      // End of buffer — only emit if it's ! or ? (unambiguous), or period at very end
-      if (ch === '!' || ch === '?') {
-        return { boundaryEnd: j, nextStart: j };
-      }
-      // For period: wait for more tokens to disambiguate
-      return null;
-    }
-
-    const afterChar = buffer[j];
-    if (afterChar !== ' ' && afterChar !== '\n' && afterChar !== '\t' && afterChar !== '\r') continue;
-
-    // For period: check abbreviation and decimal
-    if (ch === '.') {
-      // decimal: digit before period
-      if (i > 0 && /\d/.test(buffer[i - 1])) {
-        // Check if next non-whitespace is a digit → decimal number → deny
-        let k = j;
-        while (k < buffer.length && (buffer[k] === ' ' || buffer[k] === '\t')) k++;
-        if (k < buffer.length && /\d/.test(buffer[k])) continue;
-        // Otherwise could be "He scored 72." — fall through
-      }
-
-      // abbreviation: word before period is in abbreviation list
-      const wordMatch = buffer.slice(0, i).match(/\b(\w+(?:\.\w+)*)$/);
-      if (wordMatch && abbrevs.has(wordMatch[1].toLowerCase())) continue;
-
-      // single capital letter (e.g. middle initials like J. K.)
-      const singleLetter = buffer.slice(0, i).match(/\b([A-Za-z])$/);
-      if (singleLetter && singleLetter[1].length === 1) continue;
-
-      // URL/email: period preceded by non-whitespace that contains / or @
-      const beforePeriod = buffer.slice(0, i);
-      const urlMatch = beforePeriod.match(/\S+$/);
-      if (urlMatch && (urlMatch[0].includes('/') || urlMatch[0].includes('@') || urlMatch[0].includes('://'))) continue;
-    }
-
-    // Skip whitespace to find next sentence start
-    let nextStart = j;
-    while (nextStart < buffer.length && (buffer[nextStart] === ' ' || buffer[nextStart] === '\t' || buffer[nextStart] === '\n' || buffer[nextStart] === '\r')) nextStart++;
-
-    // For period: need to confirm the next visible char is uppercase or end of buffer
-    if (ch === '.') {
-      if (nextStart >= buffer.length) {
-        // Wait for more input to confirm
-        return null;
-      }
-      const nextChar = buffer[nextStart];
-      // Deny if next char is lowercase
-      if (/[a-z]/.test(nextChar)) continue;
-      // Deny if next char is digit (part of decimal like "72.5")
-      if (/\d/.test(nextChar)) continue;
-      // Confirm if uppercase, quote, or other punctuation that starts a sentence
-    }
-
-    return { boundaryEnd: j, nextStart };
-  }
-  return null;
-}
-
-
 function selectDetector(unit: AggregationUnit, options: AggregatorOptions): (buf: string) => BoundaryResult | null {
   switch (unit) {
     case 'word': return (buf) => detectWordBoundary(buf, options);
     case 'line': return (buf) => detectLineBoundary(buf, options);
     case 'paragraph': return (buf) => detectParagraphBoundary(buf, options);
-    case 'sentence': return (buf) => detectSentence(buf, options);
+    case 'sentence': return (buf) => detectSentenceBoundary(buf, options);
     case 'json': return (buf) => detectJsonBoundary(buf, options);
     case 'code-block': return (buf) => detectCodeBlockBoundary(buf, options);
     case 'markdown-section': return (buf) => detectMarkdownSectionBoundary(buf, options);
