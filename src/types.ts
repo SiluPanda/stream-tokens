@@ -40,6 +40,8 @@ export interface AggregatorOptions {
 
   // sentence options
   abbreviations?: string[];   // extra abbreviations beyond built-in list
+  ellipsisIsSentenceEnd?: boolean; // treat "..." as sentence end, default true
+  minLength?: number;           // minimum sentence length before emitting, default 0
 
   // word options
   trimWhitespace?: boolean;   // default true

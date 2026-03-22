@@ -3,6 +3,8 @@ export { aggregate } from './aggregate';
 export { detectWordBoundary } from './units/word';
 export { detectLineBoundary } from './units/line';
 export { detectParagraphBoundary } from './units/paragraph';
+export { detectSentenceBoundary } from './units/sentence';
+export { getAbbreviations } from './abbreviations';
 export { detectJsonBoundary } from './units/json';
 export { detectCodeBlockBoundary } from './units/code-block';
 export { detectMarkdownSectionBoundary } from './units/markdown-section';
