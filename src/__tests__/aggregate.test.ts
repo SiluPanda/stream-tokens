@@ -308,6 +308,27 @@ describe('Convenience functions', () => {
   });
 });
 
+// ─── 12b. trimWhitespace: false preserves whitespace ────────────────────────
+
+describe('trimWhitespace: false', () => {
+  it('preserves leading/trailing whitespace in line mode', async () => {
+    const chunks = await collect(
+      aggregate(makeStream(['  hello  \n  world  \n']), 'line', { trimWhitespace: false }),
+    );
+    expect(chunks.length).toBeGreaterThanOrEqual(1);
+    // Content should NOT be trimmed — leading/trailing spaces preserved
+    expect(chunks[0].content).toContain('  hello  ');
+  });
+
+  it('default behavior still trims whitespace', async () => {
+    const chunks = await collect(
+      aggregate(makeStream(['  hello  \n  world  \n']), 'line'),
+    );
+    expect(chunks.length).toBeGreaterThanOrEqual(1);
+    expect(chunks[0].content).toBe('hello');
+  });
+});
+
 // ─── 13. maxBufferSize ──────────────────────────────────────────────────────
 
 describe('maxBufferSize', () => {
