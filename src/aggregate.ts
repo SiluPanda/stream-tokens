@@ -85,7 +85,7 @@ export async function* aggregate(
     let boundary = detect(buffer);
     while (boundary !== null) {
       const rawContent = buffer.slice(boundary.contentStart ?? 0, boundary.boundaryEnd);
-      const content = rawContent.trim();
+      const content = options.trimWhitespace === false ? rawContent : rawContent.trim();
       if (content.length > 0) {
         yield { content, unit, index: index++, partial: false, metadata: boundary.metadata };
       }
@@ -96,16 +96,16 @@ export async function* aggregate(
 
   // Flush remaining buffer
   if (buffer.length > 0) {
-    const trimmed = buffer.trim();
-    if (trimmed.length === 0) return;
+    const remaining = options.trimWhitespace === false ? buffer : buffer.trim();
+    if (remaining.length === 0) return;
 
     if (flushMode === 'discard') {
       // nothing
     } else if (flushMode === 'callback') {
-      options.onFlush?.(trimmed, unit);
+      options.onFlush?.(remaining, unit);
     } else {
       // 'emit'
-      yield { content: trimmed, unit, index: index++, partial: isPartial(trimmed, unit) };
+      yield { content: remaining, unit, index: index++, partial: isPartial(remaining, unit) };
     }
   }
 }
